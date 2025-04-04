@@ -3,9 +3,6 @@ class ChatsController < ApplicationController
   include ActionController::Live
   include AiSdkStreamAdapter
   
-  # Skip CSRF protection for streaming endpoint
-  skip_before_action :verify_authenticity_token, only: [:stream]
-  before_action :set_headers, only: [:stream]
   before_action :set_chat, only: [:stream]
 
   # Required libraries
@@ -53,9 +50,6 @@ class ChatsController < ApplicationController
     user_message = messages.last
     user_message_content = user_message["content"]
     
-    # Create the user message (needed for the LLM to have context)
-    @chat.messages.create(role: user_message["role"], content: user_message_content)
-    
     # Use the adapter concern to handle streaming
     with_ai_sdk_stream do |stream|
       @chat.ask(user_message_content) do |chunk|
@@ -65,14 +59,6 @@ class ChatsController < ApplicationController
   end
 
   private
-
-  # Set headers for Server-Sent Events (SSE) and AI SDK compatibility
-  def set_headers
-    response.headers['Content-Type'] = 'text/event-stream'
-    response.headers['Cache-Control'] = 'no-cache'
-    response.headers['Connection'] = 'keep-alive'
-    response.headers['x-vercel-ai-data-stream'] = 'v1'
-  end
 
   def set_chat
     @chat = Chat.find(params[:id])

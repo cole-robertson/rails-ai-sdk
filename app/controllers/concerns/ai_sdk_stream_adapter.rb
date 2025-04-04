@@ -8,6 +8,15 @@ module AiSdkStreamAdapter
     include ActionController::Live
   end
   
+  # Sets the required headers for the AI SDK streaming protocol
+  # This should be called before starting a stream
+  def set_ai_sdk_headers
+    response.headers['Content-Type'] = 'text/event-stream'
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
+    response.headers['x-vercel-ai-data-stream'] = 'v1'
+  end
+  
   # Creates a new AI SDK stream and yields it to the block
   # The stream will be automatically closed after the block
   # 
@@ -19,6 +28,9 @@ module AiSdkStreamAdapter
   #   end
   #
   def with_ai_sdk_stream(stream = response.stream)
+    # Set required headers
+    set_ai_sdk_headers
+    
     adapter = StreamHelper.new(stream)
     begin
       adapter.start_frame
