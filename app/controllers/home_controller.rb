@@ -5,5 +5,8 @@ class HomeController < InertiaController
   before_action :perform_authentication
 
   def index
+    render inertia: "Home", props: {
+      has_chats: Chat.exists?
+    }
   end
 end

@@ -25,6 +25,12 @@ Rails.application.routes.draw do
 
   inertia "settings/appearance" => "settings/appearance"
 
+  resources :chats do
+    member do
+      post :ask # For sending new messages
+    end
+  end
+
   root "home#index"
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
