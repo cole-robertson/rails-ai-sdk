@@ -1,6 +1,7 @@
 class ChatsController < ApplicationController
   # Enable streaming
   include ActionController::Live
+  include AiSdkStreamAdapter
   
   # Skip CSRF protection for streaming endpoint
   skip_before_action :verify_authenticity_token, only: [:stream]
@@ -46,63 +47,20 @@ class ChatsController < ApplicationController
   end
   
   def stream
-    begin
-      messages = JSON.parse(request.body.read)["messages"]
-      
-      message_id = SecureRandom.uuid
-      
-      # Get the user message
-      user_message = messages.last
-      user_message_content = user_message["content"]
-      
-      # Create the user message (needed for the LLM to have context)
-      @chat.messages.create(role: user_message["role"], content: user_message_content)
-      
-      # Start streaming with the exact format from the Vercel example
-      # First message is the frame message with messageId
-      response.stream.write "f:{\"messageId\":\"#{message_id}\"}\n"
-      
-      # Accumulate the complete response for saving later
-      complete_response = ""
-      
-      # Now stream the chunks
+    messages = JSON.parse(request.body.read)["messages"]
+    
+    # Get the user message
+    user_message = messages.last
+    user_message_content = user_message["content"]
+    
+    # Create the user message (needed for the LLM to have context)
+    @chat.messages.create(role: user_message["role"], content: user_message_content)
+    
+    # Use the adapter concern to handle streaming
+    with_ai_sdk_stream do |stream|
       @chat.ask(user_message_content) do |chunk|
-        # Skip empty content
-        next if chunk.nil? || chunk.try(:content).nil?
-        delta_text = chunk.content.to_s
-        next if delta_text.empty?
-        
-        # Add to the complete response
-        complete_response += delta_text
-        
-        # Send the chunk to the client with the proper text format
-        response.stream.write "0:#{delta_text.to_json}\n"
+        stream.write_text_chunk(chunk.content)
       end
-      
-      # Create the assistant message in the database with the complete response
-      @chat.messages.create(role: 'assistant', content: complete_response)
-      
-      # Send the end message with finish reason
-      response.stream.write "e:{\"finishReason\":\"stop\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0},\"isContinued\":false}\n"
-      # Send the finish message part
-      response.stream.write "d:{\"finishReason\":\"stop\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0}}\n"
-      
-    rescue => e
-      # Log the error for debugging
-      Rails.logger.error("Chat streaming error: #{e.message}\n#{e.backtrace.join("\n")}")
-      
-      # Send error message in the proper format (type 3)
-      begin
-        response.stream.write "3:#{e.message.to_json}\n"
-        # Still send finish messages with error reason
-        response.stream.write "e:{\"finishReason\":\"error\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0},\"isContinued\":false}\n"
-        response.stream.write "d:{\"finishReason\":\"error\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0}}\n"
-      rescue => nested_e
-        Rails.logger.error("Failed to send error message: #{nested_e.message}")
-      end
-    ensure
-      # Always close the stream
-      response.stream.close
     end
   end
 
