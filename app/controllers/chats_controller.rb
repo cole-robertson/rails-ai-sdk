@@ -4,7 +4,9 @@ class ChatsController < ApplicationController
   
   # Skip CSRF protection for streaming endpoint
   skip_before_action :verify_authenticity_token, only: [:stream]
-  
+  before_action :set_headers, only: [:stream]
+  before_action :set_chat, only: [:stream]
+
   # Required libraries
   require 'securerandom'
   
@@ -43,19 +45,10 @@ class ChatsController < ApplicationController
     render json: { status: "processing" }
   end
   
-  # New streaming endpoint for AI SDK
   def stream
-    # Set headers for Server-Sent Events (SSE) and AI SDK compatibility
-    response.headers['Content-Type'] = 'text/event-stream'
-    response.headers['Cache-Control'] = 'no-cache'
-    response.headers['Connection'] = 'keep-alive'
-    response.headers['x-vercel-ai-data-stream'] = 'v1'
-    
     begin
-      chat = Chat.find(params[:id])
       messages = JSON.parse(request.body.read)["messages"]
       
-      # Generate a unique message ID
       message_id = SecureRandom.uuid
       
       # Get the user message
@@ -63,7 +56,7 @@ class ChatsController < ApplicationController
       user_message_content = user_message["content"]
       
       # Create the user message (needed for the LLM to have context)
-      chat.messages.create(role: user_message["role"], content: user_message_content)
+      @chat.messages.create(role: user_message["role"], content: user_message_content)
       
       # Start streaming with the exact format from the Vercel example
       # First message is the frame message with messageId
@@ -73,7 +66,7 @@ class ChatsController < ApplicationController
       complete_response = ""
       
       # Now stream the chunks
-      chat.ask(user_message_content) do |chunk|
+      @chat.ask(user_message_content) do |chunk|
         # Skip empty content
         next if chunk.nil? || chunk.try(:content).nil?
         delta_text = chunk.content.to_s
@@ -87,7 +80,7 @@ class ChatsController < ApplicationController
       end
       
       # Create the assistant message in the database with the complete response
-      chat.messages.create(role: 'assistant', content: complete_response)
+      @chat.messages.create(role: 'assistant', content: complete_response)
       
       # Send the end message with finish reason
       response.stream.write "e:{\"finishReason\":\"stop\",\"usage\":{\"promptTokens\":0,\"completionTokens\":0},\"isContinued\":false}\n"
@@ -111,5 +104,19 @@ class ChatsController < ApplicationController
       # Always close the stream
       response.stream.close
     end
+  end
+
+  private
+
+  # Set headers for Server-Sent Events (SSE) and AI SDK compatibility
+  def set_headers
+    response.headers['Content-Type'] = 'text/event-stream'
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
+    response.headers['x-vercel-ai-data-stream'] = 'v1'
+  end
+
+  def set_chat
+    @chat = Chat.find(params[:id])
   end
 end
