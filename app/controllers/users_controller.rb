@@ -16,7 +16,10 @@ class UsersController < InertiaController
       cookies.signed.permanent[:session_token] = {value: session_record.id, httponly: true}
 
       send_email_verification
-      redirect_to dashboard_path, notice: "Welcome! You have signed up successfully"
+      
+      # Create a new chat and redirect there directly
+      chat = Chat.create!(model_id: 'gpt-4o-mini')
+      redirect_to chat_path(chat), notice: "Welcome! You have signed up successfully"
     else
       redirect_to sign_up_path, inertia: inertia_errors(@user)
     end

@@ -17,7 +17,14 @@ class SessionsController < InertiaController
       @session = user.sessions.create!
       cookies.signed.permanent[:session_token] = {value: @session.id, httponly: true}
 
-      redirect_to dashboard_path, notice: "Signed in successfully"
+      # Check if user has any chats, redirect to index if they do, create a new one if not
+      if Chat.exists?
+        redirect_to chats_path, notice: "Signed in successfully"
+      else
+        # Create new chat and redirect to it
+        chat = Chat.create!(model_id: 'gpt-4o-mini')
+        redirect_to chat_path(chat), notice: "Signed in successfully"
+      end
     else
       redirect_to sign_in_path, alert: "That email or password is incorrect"
     end

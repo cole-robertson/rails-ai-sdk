@@ -2,5 +2,6 @@
 
 class DashboardController < InertiaController
   def index
+    redirect_to chats_path
   end
 end

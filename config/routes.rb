@@ -28,6 +28,7 @@ Rails.application.routes.draw do
   resources :chats do
     member do
       post :ask # For sending new messages
+      post :stream # AI SDK compatible streaming endpoint
     end
   end
 
