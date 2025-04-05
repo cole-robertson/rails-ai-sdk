@@ -3,7 +3,7 @@ import { BookOpen, Folder, LayoutGrid } from "lucide-react"
 
 import { NavFooter } from "@/components/nav-footer"
 import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "@/components/chat/nav-user"
 import {
   Sidebar,
   SidebarContent,
