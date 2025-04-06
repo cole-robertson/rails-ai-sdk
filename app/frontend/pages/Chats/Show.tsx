@@ -17,6 +17,7 @@ interface Chat {
   id: number;
   model_id: string;
   created_at: string;
+  title?: string;
   last_message_content?: string | null;
 }
 
@@ -115,6 +116,7 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
           handleInputChange={handleInputChange}
           handleSubmit={handleSubmit}
           isLoading={isLoading}
+          chat={chat}
         />
       </div>
     </div>

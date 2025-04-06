@@ -4,9 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SendIcon, SparklesIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
 import { Messages } from './messages';
+import consumer from '@/lib/cable/consumer';
+import { router } from '@inertiajs/react';
 
 interface SimpleChatProps {
   chatId: string | number;
@@ -16,6 +16,7 @@ interface SimpleChatProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
+  chat?: any;
 }
 
 export function SimpleChat({
@@ -26,6 +27,7 @@ export function SimpleChat({
   handleInputChange,
   handleSubmit,
   isLoading,
+  chat,
 }: SimpleChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,12 +38,28 @@ export function SimpleChat({
     }
   }, [messages]);
 
+  // Set up ActionCable subscription for title updates
+  useEffect(() => {
+    const chatChannel = consumer.subscriptions.create(
+      { channel: "ChatChannel", id: chatId },
+      {
+        received(data: any) {
+          if (data.title && data.title !== chat?.title) {
+            router.reload();
+          }
+        }
+      }
+    );
+
+    return () => chatChannel.unsubscribe();
+  }, [chatId, chat]);
+
   return (
     <div className="flex flex-col h-full bg-black text-white">
       <div className="bg-black text-white p-4 border-b border-neutral-800">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <SparklesIcon className="h-5 w-5" />
-          Chat with Ruby LLM
+          {chat.title ? chat.title : "Chat with Ruby LLM"}
         </h1>
       </div>
       
@@ -59,45 +77,6 @@ export function SimpleChat({
         ) : (
           <div className="space-y-6">
             <Messages chatId={chatId.toString()} messages={messages} isLoading={isLoading} votes={[]} setMessages={() => {}} reload={() => Promise.resolve(null)} isReadonly={false} isBlockVisible={false} />
-            {/* {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={cn(
-                  "flex",
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-              >
-                <div 
-                  className={cn(
-                    "flex max-w-[75%]",
-                    message.role === 'user' ? 'flex-row-reverse gap-2' : 'flex-row gap-2'
-                  )}
-                >
-                  {message.role === 'assistant' && (
-                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-neutral-700 flex items-center justify-center text-sm font-medium">
-                      AI
-                    </div>
-                  )}
-                  <div 
-                    className={cn(
-                      "px-4 py-3 rounded-2xl",
-                      message.role === 'user' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-neutral-800 text-white'
-                    )}
-                  >
-                    <div className="whitespace-pre-wrap">
-                      {message.content}
-                    </div>
-                  </div>
-                  {message.role === 'user' && (
-                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-medium text-white">
-                      U
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))} */}
             <div ref={messagesEndRef} />
           </div>
         )}

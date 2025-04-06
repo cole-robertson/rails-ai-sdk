@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client"
 
 import { initializeTheme } from "@/hooks/use-appearance"
 import PersistentLayout from "@/layouts/persistent-layout"
+import '@/lib/cable/consumer'
 
 // Temporary type definition, until @inertiajs/react provides one
 interface ResolvedComponent {

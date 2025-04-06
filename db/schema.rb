@@ -10,11 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_04_140526) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_06_062901) do
   create_table "chats", force: :cascade do |t|
     t.string "model_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "title"
     t.index ["model_id"], name: "index_chats_on_model_id"
   end
 

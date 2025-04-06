@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
 import { isToday, isYesterday } from 'date-fns';
 import { chatPath } from '@/routes';
@@ -17,11 +17,13 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import consumer from '@/lib/cable/consumer';
 
 interface Chat {
   id: number;
   model_id: string;
   created_at: string;
+  title?: string;
   last_message_content?: string | null;
 }
 
@@ -31,7 +33,15 @@ interface SimpleSidebarProps {
   onNewChat: () => void;
 }
 
-export function SimpleSidebar({ chats, currentChatId, onNewChat }: SimpleSidebarProps) {
+export function SimpleSidebar({ chats: initialChats, currentChatId, onNewChat }: SimpleSidebarProps) {
+  // Use local state to track chats so we can update them without a full page reload
+  const [chats, setChats] = useState<Chat[]>(initialChats);
+  
+  // When initialChats changes from parent, update our local state
+  useEffect(() => {
+    setChats(initialChats);
+  }, [initialChats]);
+  
   // Group chats by date
   const todayChats = chats.filter(chat => isToday(new Date(chat.created_at)));
   const yesterdayChats = chats.filter(chat => isYesterday(new Date(chat.created_at)));
@@ -127,7 +137,9 @@ function ChatMenuItem({ chat, isActive }: { chat: Chat; isActive: boolean }) {
       )}
     >
       <div className="flex flex-col overflow-hidden">
-        <div className="font-medium truncate">New Chat</div>
+        <div className="font-medium truncate">
+          {chat.title || "New Chat"}
+        </div>
         <div className="text-xs text-neutral-500 truncate">
           {chat.last_message_content ? (
             <span className="truncate">{chat.last_message_content}</span>

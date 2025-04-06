@@ -11,7 +11,9 @@ module ApplicationCable
         if (user_id = cookies.encrypted[:user_id])
           User.find_by(id: user_id)
         else
-          reject_unauthorized_connection
+          # Allow unauthenticated connections
+          # But still identify them as nil
+          nil
         end
       end
   end

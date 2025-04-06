@@ -9,7 +9,7 @@ class ChatsController < ApplicationController
     chats = Chat.order(created_at: :desc)
     
     render inertia: "Chats/Index", props: {
-      chats: chats.as_json(only: [:id, :model_id, :created_at], 
+      chats: chats.as_json(only: [:id, :model_id, :created_at, :title], 
                            methods: [:last_message_content])
     }
   end
@@ -19,9 +19,9 @@ class ChatsController < ApplicationController
     all_chats = Chat.order(created_at: :desc)
     
     render inertia: "Chats/Show", props: {
-      chat: @chat.as_json(only: [:id, :model_id, :created_at]),
+      chat: @chat.as_json(only: [:id, :model_id, :created_at, :title]),
       messages: messages.as_json(only: [:id, :role, :content, :created_at]),
-      allChats: all_chats.as_json(only: [:id, :model_id, :created_at], 
+      allChats: all_chats.as_json(only: [:id, :model_id, :created_at, :title], 
                                   methods: [:last_message_content])
     }
   end
