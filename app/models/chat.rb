@@ -1,9 +1,8 @@
-require 'ostruct'
-
 class Chat < ApplicationRecord
   acts_as_chat
   
-  # Add custom methods as needed
+  has_many :messages, after_add: :check_for_title_generation
+  
   def last_message_content
     last_message = messages.order(created_at: :desc).first
     return nil unless last_message
@@ -12,16 +11,18 @@ class Chat < ApplicationRecord
     content = last_message.content.to_s
     content.length > 100 ? "#{content[0..100]}..." : content
   end
-
-  # Override the ask method to check if it's the first message
-  def ask(content, **options, &block)
-    result = super(content, **options, &block)
+  
+  private
+  
+  def check_for_title_generation(message)
+    return unless message.role == 'user'
+    return unless title.blank?
+    return unless first_user_message?(message)
     
-    # If this is the first user message, generate a title
-    if messages.where(role: 'user').count == 1 && title.blank?
-      GenerateChatTitleJob.perform_later(id)
-    end
-    
-    result
+    GenerateChatTitleJob.perform_later(id)
+  end
+  
+  def first_user_message?(message)
+    messages.where(role: 'user').count == 1
   end
 end
