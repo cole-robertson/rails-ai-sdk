@@ -1,7 +1,7 @@
 class Chat < ApplicationRecord
   acts_as_chat
   
-  has_many :messages, after_add: :check_for_title_generation
+  has_many :messages, dependent: :destroy, after_add: :check_for_title_generation
   
   def last_message_content
     last_message = messages.order(created_at: :desc).first
@@ -15,7 +15,6 @@ class Chat < ApplicationRecord
   private
   
   def check_for_title_generation(message)
-    return unless message.role == 'user'
     return unless title.blank?
     return unless first_user_message?(message)
     
@@ -23,6 +22,6 @@ class Chat < ApplicationRecord
   end
   
   def first_user_message?(message)
-    messages.where(role: 'user').count == 1
+    message.role == 'user' && messages.where(role: 'user').count == 1
   end
 end

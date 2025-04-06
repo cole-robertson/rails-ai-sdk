@@ -3,7 +3,7 @@ class ChatsController < ApplicationController
   include ActionController::Live
   include AiSdkStreamAdapter
   
-  before_action :set_chat, only: [:show, :stream]
+  before_action :set_chat, only: [:show, :stream, :destroy]
 
   def index
     chats = Chat.order(created_at: :desc)
@@ -43,6 +43,23 @@ class ChatsController < ApplicationController
     with_ai_sdk_stream do |stream|
       @chat.ask(user_message_content) do |chunk|
         stream.write_text_chunk(chunk.content)
+      end
+    end
+  end
+
+  def destroy
+    # Find the next most recent chat before deleting the current one
+    next_chat = Chat.where.not(id: @chat.id).order(created_at: :desc).first
+    
+    @chat.destroy
+    
+    respond_to do |format|
+      if next_chat
+        format.html { redirect_to chat_path(next_chat), notice: "Chat was successfully deleted." }
+        format.json { head :no_content }
+      else
+        format.html { redirect_to chats_path, notice: "Chat was successfully deleted." }
+        format.json { head :no_content }
       end
     end
   end
