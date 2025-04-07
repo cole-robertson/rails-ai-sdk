@@ -1,46 +1,87 @@
-require 'net/http'
+require 'faraday'
 require 'json'
-require 'uri'
 require 'securerandom'
 
 class Weather < RubyLLM::Tool
   description "Gets current weather for a location based on latitude and longitude"
-  param :latitude, type: :number, desc: "Latitude coordinate", required: true
-  param :longitude, type: :number, desc: "Longitude coordinate", required: true
-  param :temperature_unit, type: :string, desc: "Temperature unit (celsius or fahrenheit) default is fahrenheit", required: true
+  # Simplified param descriptions, type/required handled by validation
+  param :latitude, desc: "Latitude (e.g., 52.5200)", required: true
+  param :longitude, desc: "Longitude (e.g., 13.4050)", required: true
+  param :temperature_unit, desc: "Temperature unit (fahrenheit or celsius), assume fahrenheit if not specified by the user"
 
   def initialize(stream)
     @stream = stream
   end
 
   def execute(latitude:, longitude:, temperature_unit: 'fahrenheit')
-    uri = URI("https://api.open-meteo.com/v1/forecast?latitude=#{latitude}&longitude=#{longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto&temperature_unit=#{temperature_unit}")
+    # Validate inputs first
+    validation_error = validate_coordinates(latitude, longitude) || validate_temperature_unit(temperature_unit)
     
-    response = Net::HTTP.get_response(uri)
-    
-    if response.is_a?(Net::HTTPSuccess)
-      weather_data = JSON.parse(response.body)
-      
-      # Notify the stream about the tool call and its result
-      # Assuming the stream needs the tool call info before returning the final result.
-      # Adjust the arguments and result structure as needed for your specific LLM integration.
-      tool_call_id = SecureRandom.uuid # Generate a unique ID for the tool call
-      @stream.write_tool_call(tool_call_id, 'weather', { latitude: latitude, longitude: longitude, temperature_unit: temperature_unit })
-      @stream.write_tool_result(tool_call_id, weather_data) 
+    tool_call_id = SecureRandom.uuid
+    arguments = { latitude: latitude, longitude: longitude, temperature_unit: temperature_unit }
+    @stream.write_tool_call(tool_call_id, 'weather', arguments)
 
-      # Return the parsed data, or format a specific string if preferred.
-      # Example: Extracting current temperature
-      # current_temp = weather_data.dig('current', 'temperature_2m')
-      # unit_symbol = temperature_unit == 'fahrenheit' ? '°F' : '°C' # Get correct unit symbol
-      # return "Current temperature is #{current_temp}#{unit_symbol}"
-      
-      return "Weather data fetched successfully" # Return the full parsed JSON data
-    else
-      # Handle API errors (e.g., log the error, return an error message)
-      # For now, returning a simple error string.
-      error_message = "Failed to fetch weather data: #{response.code} #{response.message}"
-      @stream.write_text_chunk(error_message) # Or handle errors differently
-      return error_message 
+    if validation_error
+      @stream.write_tool_result(tool_call_id, validation_error)
+      return validation_error # Return validation errors to the LLM
     end
+
+    begin
+      response = Faraday.get(weather_api_url(latitude, longitude, temperature_unit))
+
+      case response.status
+      when 200
+        begin
+          weather_data = JSON.parse(response.body)
+          @stream.write_tool_result(tool_call_id, weather_data)
+          return weather_data
+        rescue JSON::ParserError => e
+          error_result = { error: "Failed to parse weather API response: #{e.message}" }
+          @stream.write_tool_result(tool_call_id, error_result)
+          return error_result
+        end
+      when 429 # Rate limit or other retryable error
+        error_result = { error: "API request failed (Status #{response.status}): Rate limit likely exceeded. Please try again later." } 
+        @stream.write_tool_result(tool_call_id, error_result)
+        return error_result
+      else
+        raise "Weather API error: #{response.status} - #{response.body}"
+      end
+    rescue Faraday::Error => e # Catch Faraday connection errors, timeouts, etc.
+       error_result = { error: "Weather API request failed: #{e.message}" }
+       @stream.write_tool_result(tool_call_id, error_result)
+       return error_result
+    end
+  end
+
+  private
+
+  def validate_coordinates(lat_str, long_str)
+    begin
+      lat = Float(lat_str)
+      long = Float(long_str)
+
+      if lat.abs > 90 || long.abs > 180
+        return { error: "Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180." }
+      end
+    rescue ArgumentError, TypeError
+      return { error: "Invalid coordinates. Latitude and Longitude must be numbers." }
+    end
+    nil # Return nil if valid
+  end
+
+  def validate_temperature_unit(unit)
+    unless ['celsius', 'fahrenheit'].include?(unit.to_s.downcase)
+      return { error: "Invalid temperature unit. Must be 'celsius' or 'fahrenheit'." }
+    end
+    nil # Return nil if valid
+  end
+
+  def weather_api_url(latitude, longitude, temperature_unit)
+    lat_f = Float(latitude)
+    long_f = Float(longitude)
+    unit = temperature_unit.to_s.downcase
+    
+    "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto&temperature_unit=%s" % [lat_f, long_f, unit]
   end
 end
