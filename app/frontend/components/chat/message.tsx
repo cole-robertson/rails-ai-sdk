@@ -118,10 +118,10 @@ const PurePreviewMessage = ({
 
                   if (state === 'result') {
                     const { result } = toolInvocation;
-
+                    console.log('result', result);
                     return (
                       <div key={toolCallId}>
-                        {toolName === 'getWeather' ? (
+                        {toolName === 'weather' ? (
                           <Weather weatherAtLocation={result} />
                         ) : (
                           <pre>{JSON.stringify(result, null, 2)}</pre>
@@ -133,10 +133,10 @@ const PurePreviewMessage = ({
                     <div
                       key={toolCallId}
                       className={cn({
-                        skeleton: ['getWeather'].includes(toolName),
+                        skeleton: ['weather'].includes(toolName),
                       })}
                     >
-                      {toolName === 'getWeather' ? (
+                      {toolName === 'weather' ? (
                         <Weather />
                       ) : null}
                     </div>

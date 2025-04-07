@@ -46,7 +46,7 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
     input, 
     handleInputChange, 
     handleSubmit,
-    status 
+    status
   } = useChat({
     api: streamChatPath(chat.id),
     initialMessages: initialAIMessages,
@@ -70,6 +70,8 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
       setHasError(false);
     }
   });
+
+  console.log('messages', messages);
   
   const handleNewChat = () => {
     router.post(chatsPath(), {}, {
