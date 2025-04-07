@@ -33,11 +33,9 @@ class ChatsController < ApplicationController
   def stream
     messages = JSON.parse(request.body.read)["messages"]
     
-    # Get the user message
     user_message = messages.last
     user_message_content = user_message["content"]
     
-    # Use the adapter concern to handle streaming
     with_ai_sdk_stream do |stream|
       @chat.ask(user_message_content) do |chunk|
         stream.write_text_chunk(chunk.content)

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
+import React, { useState } from 'react';
+import { useChat,  } from '@ai-sdk/react';
 import { streamChatPath, chatsPath } from '@/routes';
 import { router } from '@inertiajs/react';
 import { toast } from 'sonner';
@@ -29,8 +29,8 @@ interface ShowProps {
 
 const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }) => {
   const [hasError, setHasError] = useState(false);
+
   
-  // Convert Rails format messages to AI SDK format
   const initialAIMessages = initialMessages.map(message => ({
     id: String(message.id),
     role: message.role as 'user' | 'assistant' | 'system' | 'data',
@@ -42,14 +42,13 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
   
   // Use the AI SDK useChat hook
   const { 
-    messages, 
+    messages,
     input, 
     handleInputChange, 
     handleSubmit,
-    isLoading, 
-    error 
+    status 
   } = useChat({
-    api: streamChatPath(chat.id), // Stream endpoint
+    api: streamChatPath(chat.id),
     initialMessages: initialAIMessages,
     headers: {
       'X-CSRF-Token': csrfToken,
@@ -57,7 +56,6 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
     body: {
       chat_id: chat.id
     },
-    streamProtocol: 'data',
     onResponse: (response) => {
       if (!response.ok) {
         console.error(`Response error: ${response.status} ${response.statusText}`);
@@ -73,25 +71,13 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
     }
   });
   
-  // Log any errors for debugging
-  useEffect(() => {
-    if (error) {
-      console.error("Chat error:", error);
-      toast.error('An error occurred. Please try again.');
-    }
-  }, [error]);
-
   const handleNewChat = () => {
-    // Create a new chat using POST request via Inertia
     router.post(chatsPath(), {}, {
-      onSuccess: () => {
-        // The server will handle the redirect to the new chat
-      },
-      onError: () => {
-        toast.error('Failed to create a new chat');
-      }
+      onError: () => toast.error('Failed to create a new chat')
     });
   };
+
+  const isLoading = status === 'streaming' || status === 'submitted';
 
   return (
     <div className="flex h-screen bg-black">
