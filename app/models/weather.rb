@@ -3,28 +3,19 @@ require 'json'
 require 'securerandom'
 
 class Weather < RubyLLM::Tool
+  include ToolStreamingFeedback
+  
   description "Gets current weather for a location based on latitude and longitude"
   
   param :latitude, desc: "Latitude (e.g., 52.5200)", required: true
   param :longitude, desc: "Longitude (e.g., 13.4050)", required: true
   param :temperature_unit, desc: "Temperature unit (fahrenheit or celsius), assume fahrenheit if not specified by the user"
 
-  def initialize(stream)
-    @stream = stream
-  end
-
-  def execute(latitude:, longitude:, temperature_unit: 'fahrenheit')
+  def perform(latitude:, longitude:, temperature_unit: 'fahrenheit')
     # Validate inputs first
     validation_error = validate_coordinates(latitude, longitude) || validate_temperature_unit(temperature_unit)
     
-    tool_call_id = SecureRandom.uuid
-    arguments = { latitude: latitude, longitude: longitude, temperature_unit: temperature_unit }
-    @stream.write_tool_call(tool_call_id, 'weather', arguments)
-
-    if validation_error
-      @stream.write_tool_result(tool_call_id, validation_error)
-      return validation_error # Return validation errors to the LLM
-    end
+    return validation_error if validation_error # Return validation errors to the LLM
 
     begin
       response = Faraday.get(weather_api_url(latitude, longitude, temperature_unit))
@@ -32,25 +23,17 @@ class Weather < RubyLLM::Tool
       case response.status
       when 200
         begin
-          weather_data = JSON.parse(response.body)
-          @stream.write_tool_result(tool_call_id, weather_data)
-          return weather_data
+          JSON.parse(response.body)
         rescue JSON::ParserError => e
-          error_result = { error: "Failed to parse weather API response: #{e.message}" }
-          @stream.write_tool_result(tool_call_id, error_result)
-          return error_result
+          { error: "Failed to parse weather API response: #{e.message}" }
         end
       when 429 # Rate limit or other retryable error
-        error_result = { error: "API request failed (Status #{response.status}): Rate limit likely exceeded. Please try again later." } 
-        @stream.write_tool_result(tool_call_id, error_result)
-        return error_result
+        { error: "API request failed (Status #{response.status}): Rate limit likely exceeded. Please try again later." }
       else
-        raise "Weather API error: #{response.status} - #{response.body}"
+        { error: "Weather API error: #{response.status} - #{response.body}" }
       end
     rescue Faraday::Error => e # Catch Faraday connection errors, timeouts, etc.
-       error_result = { error: "Weather API request failed: #{e.message}" }
-       @stream.write_tool_result(tool_call_id, error_result)
-       return error_result
+      { error: "Weather API request failed: #{e.message}" }
     end
   end
 
