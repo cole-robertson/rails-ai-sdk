@@ -4,7 +4,7 @@ require 'securerandom'
 
 class Weather < RubyLLM::Tool
   description "Gets current weather for a location based on latitude and longitude"
-  # Simplified param descriptions, type/required handled by validation
+  
   param :latitude, desc: "Latitude (e.g., 52.5200)", required: true
   param :longitude, desc: "Longitude (e.g., 13.4050)", required: true
   param :temperature_unit, desc: "Temperature unit (fahrenheit or celsius), assume fahrenheit if not specified by the user"
