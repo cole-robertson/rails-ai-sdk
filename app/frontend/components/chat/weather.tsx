@@ -130,30 +130,22 @@ export function Weather({
       if (!scrollContainer || !weatherAtLocation) return;
       
       const scrollPosition = scrollContainer.scrollLeft;
-      const containerWidth = scrollContainer.clientWidth;
       const itemWidth = 44; // Width of each hour item (32px + 12px gap)
       
-      // Add a bias to move the trigger point more to the left
-      // Negative bias shifts the "center" to the left, making sunset hours need to go further right before triggering
-      const centerBias = itemWidth * -0.3; // -30% of an item's width
-      
-      // Calculate the center position in the scroll container, with bias
-      const centerPosition = scrollPosition + (containerWidth / 2) + centerBias;
-      
-      // Find which hour item is at the center
-      const centerItemIndex = Math.floor(centerPosition / itemWidth);
+      // Find which hour item is at the leftmost visible position
+      const leftmostVisibleIndex = Math.floor(scrollPosition / itemWidth);
       
       // Make sure the index is valid
-      if (centerItemIndex >= 0 && centerItemIndex < displayTimes.length && displayTimes[centerItemIndex]) {
-        // Check if the center hour is day or night
-        const centerTime = displayTimes[centerItemIndex];
-        const centerIsDay = isDuringDay(
-          centerTime,
+      if (leftmostVisibleIndex >= 0 && leftmostVisibleIndex < displayTimes.length && displayTimes[leftmostVisibleIndex]) {
+        // Check if the leftmost hour is day or night
+        const leftmostTime = displayTimes[leftmostVisibleIndex];
+        const leftmostIsDay = isDuringDay(
+          leftmostTime,
           weatherAtLocation.daily.sunrise,
           weatherAtLocation.daily.sunset
         );
         
-        setIsDay(centerIsDay);
+        setIsDay(leftmostIsDay);
       }
     };
     

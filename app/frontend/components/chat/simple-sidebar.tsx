@@ -133,9 +133,9 @@ export function SimpleSidebar({ chats: initialChats, currentChatId, onNewChat }:
         )}
       </div>
       
-      <div className="p-3 border-t border-neutral-800">
-        <div className="text-xs text-neutral-500 flex items-center">
-          Built by <a href="https://dscribeai.com" target="_blank" className="font-medium ml-1">dScribe AI</a>
+      <div className="p-6.5 border-t border-neutral-800">
+        <div className="text-sm text-neutral-500 flex items-center">
+          Built by <a href="https://dscribeai.com" target="_blank" className="font-medium ml-1 text-purple-700">dScribe AI</a>
         </div>
       </div>
     </div>
