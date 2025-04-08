@@ -75,7 +75,9 @@ export function Weather({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const hoursToShow = isMobile ? 5 : 6;
+  // Show 24 hours of forecast data
+  const hoursToDisplay = 24;
+  const visibleHoursAtOnce = isMobile ? 5 : 6;
 
   // For loading state, create placeholder arrays
   const displayTimes = weatherAtLocation 
@@ -86,9 +88,9 @@ export function Weather({
           ),
           weatherAtLocation.hourly.time.findIndex(
             (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
-          ) + hoursToShow
+          ) + hoursToDisplay
         )
-    : Array(hoursToShow).fill('');
+    : Array(visibleHoursAtOnce).fill('');
 
   const displayTemperatures = weatherAtLocation 
     ? weatherAtLocation.hourly.temperature_2m
@@ -98,9 +100,9 @@ export function Weather({
           ),
           weatherAtLocation.hourly.time.findIndex(
             (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
-          ) + hoursToShow
+          ) + hoursToDisplay
         )
-    : Array(hoursToShow).fill(null);
+    : Array(visibleHoursAtOnce).fill(null);
 
   return (
     <div
@@ -141,30 +143,44 @@ export function Weather({
         </div>
       </div>
 
-      <div className="flex flex-row justify-between">
-        {displayTimes.map((time, index) => (
-          <div key={time || index} className="flex flex-col items-center gap-1">
-            <div className="text-blue-100 text-xs">
-              {time ? format(new Date(time), 'ha') : '—'}
-            </div>
-            <div
-              className={cn(
-                'size-6 rounded-full skeleton-div',
-                {
-                  'bg-yellow-300': isDay && weatherAtLocation,
-                },
-                {
-                  'bg-indigo-200': !isDay && weatherAtLocation,
-                }
-              )}
-            />
-            <div className="text-blue-50 text-sm">
-              {weatherAtLocation && displayTemperatures[index] !== null
-                ? `${n(displayTemperatures[index])}${weatherAtLocation.hourly_units.temperature_2m}`
-                : '—°'}
-            </div>
+      <div className="relative">
+        <div className="overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex flex-row gap-8" style={{ width: 'max-content', minWidth: '100%' }}>
+            {displayTimes.map((time, index) => (
+              <div 
+                key={time || index} 
+                className="flex flex-col items-center gap-1" 
+              >
+                <div className="text-blue-100 text-xs">
+                  {time ? format(new Date(time), 'ha') : '—'}
+                </div>
+                <div
+                  className={cn(
+                    'size-6 rounded-full skeleton-div',
+                    {
+                      'bg-yellow-300': isDay && weatherAtLocation,
+                    },
+                    {
+                      'bg-indigo-200': !isDay && weatherAtLocation,
+                    }
+                  )}
+                />
+                <div className="text-blue-50 text-sm">
+                  {weatherAtLocation && displayTemperatures[index] !== null
+                    ? `${n(displayTemperatures[index])}${weatherAtLocation.hourly_units.temperature_2m}`
+                    : '—°'}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        {/* Scroll indicators */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 h-full flex items-center">
+          <div className={cn(
+            "w-6 h-10 bg-gradient-to-l from-blue-400 to-transparent opacity-50",
+            { "from-indigo-900": !isDay && weatherAtLocation }
+          )}></div>
+        </div>
       </div>
     </div>
   );

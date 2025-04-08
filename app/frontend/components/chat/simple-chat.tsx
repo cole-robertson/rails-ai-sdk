@@ -59,7 +59,7 @@ export function SimpleChat({
       <div className="bg-black text-white p-4 border-b border-neutral-800">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <SparklesIcon className="h-5 w-5" />
-          {chat.title ? chat.title : "Chat with Ruby LLM"}
+          {chat.title ? chat.title : "New Chat"}
         </h1>
       </div>
       
