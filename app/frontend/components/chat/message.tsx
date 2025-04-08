@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { MessageEditor } from './message-editor';
+import { Transcribe } from './transcribe';
 
 const PurePreviewMessage = ({
   chatId,
@@ -118,14 +119,13 @@ const PurePreviewMessage = ({
 
                   if (state === 'result') {
                     const { result } = toolInvocation;
-                    console.log('result', result);
                     return (
                       <div key={toolCallId}>
                         {toolName === 'weather' ? (
                           <Weather weatherAtLocation={result} />
-                        ) : (
-                          <pre>{JSON.stringify(result, null, 2)}</pre>
-                        )}
+                        ) : toolName === 'transcribe' ? (
+                          <Transcribe result={result} />
+                        ) : null}
                       </div>
                     );
                   }
@@ -138,6 +138,8 @@ const PurePreviewMessage = ({
                     >
                       {toolName === 'weather' ? (
                         <Weather />
+                      ) : toolName === 'transcribe' ? (
+                        <Transcribe />
                       ) : null}
                     </div>
                   );

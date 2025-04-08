@@ -36,7 +36,8 @@ class ChatsController < ApplicationController
 
     with_ai_sdk_stream do |stream|
       weather_tool = Weather.new(stream)
-      @chat.with_tool(weather_tool)
+      transcribe_tool = Transcribe.new(stream)
+      @chat.with_tools(weather_tool, transcribe_tool)
       @chat.ask(user_message_content) do |chunk|
         puts "Chunk: #{chunk}"
         stream.write_text_chunk(chunk.content)
@@ -44,9 +45,10 @@ class ChatsController < ApplicationController
     end
 
     tool_call = @chat.messages.find_by(role: 'assistant').tool_calls.first
-    puts "Tool: #{tool_call.name}"
-    puts "Arguments: #{tool_call.arguments}"
-  
+    if tool_call
+      puts "Tool: #{tool_call.name}"
+      puts "Arguments: #{tool_call.arguments}"
+    end  
   end
 
 
