@@ -216,6 +216,11 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.6-x86_64-linux-musl)
       racc (~> 1.4)
+    oj (3.16.10)
+      bigdecimal (>= 3.0)
+      ostruct (>= 0.2)
+    oj_serializers (2.0.3)
+      oj (>= 3.14.0)
     ostruct (0.6.1)
     parallel (1.26.3)
     parser (3.3.7.3)
@@ -384,6 +389,8 @@ GEM
     thruster (0.1.12-arm64-darwin)
     thruster (0.1.12-x86_64-linux)
     timeout (0.4.3)
+    typelizer (0.3.0)
+      railties (>= 6.0.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (3.1.4)
@@ -439,6 +446,7 @@ DEPENDENCIES
   js-routes
   kamal
   letter_opener
+  oj_serializers
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.2)
@@ -451,6 +459,7 @@ DEPENDENCIES
   solid_queue
   sqlite3 (>= 2.1)
   thruster
+  typelizer
   tzinfo-data
   vite_rails (~> 3.0)
   web-console

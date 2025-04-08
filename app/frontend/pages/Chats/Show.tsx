@@ -5,21 +5,7 @@ import { router } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { SimpleChat } from '@/components/chat/simple-chat';
 import { SimpleSidebar } from '@/components/chat/simple-sidebar';
-
-interface Message {
-  id: string | number;
-  role: string;
-  content: string;
-  created_at: string;
-}
-
-interface Chat {
-  id: number;
-  model_id: string;
-  created_at: string;
-  title?: string;
-  last_message_content?: string | null;
-}
+import type { Chat, Message } from '@/types';
 
 interface ShowProps {
   chat: Chat;

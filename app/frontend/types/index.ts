@@ -45,3 +45,13 @@ export interface Session {
   ip_address: string
   created_at: string
 }
+
+// Import and re-export all serializer types
+export * from './serializers';
+
+// You can add custom types here
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}

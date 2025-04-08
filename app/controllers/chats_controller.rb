@@ -7,8 +7,7 @@ class ChatsController < ApplicationController
     chats = Chat.order(created_at: :desc)
     
     render inertia: "Chats/Index", props: {
-      chats: chats.as_json(only: [:id, :model_id, :created_at, :title], 
-                           methods: [:last_message_content])
+      chats: ChatSerializer.many(chats)
     }
   end
 
@@ -17,10 +16,9 @@ class ChatsController < ApplicationController
     all_chats = Chat.order(created_at: :desc)
     
     render inertia: "Chats/Show", props: {
-      chat: @chat.as_json(only: [:id, :model_id, :created_at, :title]),
+      chat: ChatSerializer.one(@chat),
       messages: Message.to_ai_sdk_format(messages),
-      allChats: all_chats.as_json(only: [:id, :model_id, :created_at, :title], 
-                                  methods: [:last_message_content])
+      allChats: ChatSerializer.many(all_chats)
     }
   end
 
