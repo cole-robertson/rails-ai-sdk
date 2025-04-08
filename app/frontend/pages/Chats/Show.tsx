@@ -29,14 +29,6 @@ interface ShowProps {
 
 const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }) => {
   const [hasError, setHasError] = useState(false);
-
-  
-  const initialAIMessages = initialMessages.map(message => ({
-    id: String(message.id),
-    role: message.role as 'user' | 'assistant' | 'system' | 'data',
-    content: message.content,
-  }));
-  
   // Get CSRF token from meta tag
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   
@@ -49,7 +41,7 @@ const Show: React.FC<ShowProps> = ({ chat, messages: initialMessages, allChats }
     status
   } = useChat({
     api: streamChatPath(chat.id),
-    initialMessages: initialAIMessages,
+    initialMessages: initialMessages as any,
     headers: {
       'X-CSRF-Token': csrfToken,
     },

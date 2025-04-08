@@ -18,7 +18,7 @@ class ChatsController < ApplicationController
     
     render inertia: "Chats/Show", props: {
       chat: @chat.as_json(only: [:id, :model_id, :created_at, :title]),
-      messages: messages.as_json(only: [:id, :role, :content, :created_at]),
+      messages: Message.to_ai_sdk_format(messages),
       allChats: all_chats.as_json(only: [:id, :model_id, :created_at, :title], 
                                   methods: [:last_message_content])
     }
