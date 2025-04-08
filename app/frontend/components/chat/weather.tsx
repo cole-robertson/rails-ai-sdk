@@ -133,8 +133,12 @@ export function Weather({
       const containerWidth = scrollContainer.clientWidth;
       const itemWidth = 44; // Width of each hour item (32px + 12px gap)
       
-      // Calculate the center position in the scroll container
-      const centerPosition = scrollPosition + (containerWidth / 2);
+      // Add a bias to move the trigger point more to the left
+      // Negative bias shifts the "center" to the left, making sunset hours need to go further right before triggering
+      const centerBias = itemWidth * -0.3; // -30% of an item's width
+      
+      // Calculate the center position in the scroll container, with bias
+      const centerPosition = scrollPosition + (containerWidth / 2) + centerBias;
       
       // Find which hour item is at the center
       const centerItemIndex = Math.floor(centerPosition / itemWidth);
