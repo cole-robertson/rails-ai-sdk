@@ -199,21 +199,23 @@ function n(num: number): number {
 }
 
 export function Weather({
-  weatherAtLocation = SAMPLE,
+  weatherAtLocation
 }: {
   weatherAtLocation?: WeatherAtLocation;
 }) {
-  const currentHigh = Math.max(
-    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24),
-  );
-  const currentLow = Math.min(
-    ...weatherAtLocation.hourly.temperature_2m.slice(0, 24),
-  );
+  const currentHigh = weatherAtLocation 
+    ? Math.max(...weatherAtLocation.hourly.temperature_2m.slice(0, 24))
+    : null;
+  const currentLow = weatherAtLocation 
+    ? Math.min(...weatherAtLocation.hourly.temperature_2m.slice(0, 24))
+    : null;
 
-  const isDay = isWithinInterval(new Date(weatherAtLocation.current.time), {
-    start: new Date(weatherAtLocation.daily.sunrise[0]),
-    end: new Date(weatherAtLocation.daily.sunset[0]),
-  });
+  const isDay = weatherAtLocation 
+    ? isWithinInterval(new Date(weatherAtLocation.current.time), {
+        start: new Date(weatherAtLocation.daily.sunrise[0]),
+        end: new Date(weatherAtLocation.daily.sunset[0]),
+      }) 
+    : true; // Default to day mode when loading
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -230,31 +232,41 @@ export function Weather({
 
   const hoursToShow = isMobile ? 5 : 6;
 
-  // Find the index of the current time or the next closest time
-  const currentTimeIndex = weatherAtLocation.hourly.time.findIndex(
-    (time) => new Date(time) >= new Date(weatherAtLocation.current.time),
-  );
+  // For loading state, create placeholder arrays
+  const displayTimes = weatherAtLocation 
+    ? weatherAtLocation.hourly.time
+        .slice(
+          weatherAtLocation.hourly.time.findIndex(
+            (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
+          ),
+          weatherAtLocation.hourly.time.findIndex(
+            (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
+          ) + hoursToShow
+        )
+    : Array(hoursToShow).fill('');
 
-  // Slice the arrays to get the desired number of items
-  const displayTimes = weatherAtLocation.hourly.time.slice(
-    currentTimeIndex,
-    currentTimeIndex + hoursToShow,
-  );
-  const displayTemperatures = weatherAtLocation.hourly.temperature_2m.slice(
-    currentTimeIndex,
-    currentTimeIndex + hoursToShow,
-  );
+  const displayTemperatures = weatherAtLocation 
+    ? weatherAtLocation.hourly.temperature_2m
+        .slice(
+          weatherAtLocation.hourly.time.findIndex(
+            (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
+          ),
+          weatherAtLocation.hourly.time.findIndex(
+            (time) => new Date(time) >= new Date(weatherAtLocation.current.time)
+          ) + hoursToShow
+        )
+    : Array(hoursToShow).fill(null);
 
   return (
     <div
       className={cn(
         'flex flex-col gap-4 rounded-2xl p-4 skeleton-bg max-w-[500px]',
         {
-          'bg-blue-400': isDay,
+          'bg-blue-400': isDay && weatherAtLocation,
         },
         {
-          'bg-indigo-900': !isDay,
-        },
+          'bg-indigo-900': !isDay && weatherAtLocation,
+        }
       )}
     >
       <div className="flex flex-row justify-between items-center">
@@ -263,42 +275,48 @@ export function Weather({
             className={cn(
               'size-10 rounded-full skeleton-div',
               {
-                'bg-yellow-300': isDay,
+                'bg-yellow-300': isDay && weatherAtLocation,
               },
               {
-                'bg-indigo-100': !isDay,
-              },
+                'bg-indigo-100': !isDay && weatherAtLocation,
+              }
             )}
           />
           <div className="text-4xl font-medium text-blue-50">
-            {n(weatherAtLocation.current.temperature_2m)}
-            {weatherAtLocation.current_units.temperature_2m}
+            {weatherAtLocation 
+              ? `${n(weatherAtLocation.current.temperature_2m)}${weatherAtLocation.current_units.temperature_2m}`
+              : '—°'}
           </div>
         </div>
 
-        <div className="text-blue-50">{`H:${n(currentHigh)}° L:${n(currentLow)}°`}</div>
+        <div className="text-blue-50">
+          {weatherAtLocation
+            ? `H:${n(currentHigh!)}° L:${n(currentLow!)}°`
+            : 'H:—° L:—°'}
+        </div>
       </div>
 
       <div className="flex flex-row justify-between">
         {displayTimes.map((time, index) => (
-          <div key={time} className="flex flex-col items-center gap-1">
+          <div key={time || index} className="flex flex-col items-center gap-1">
             <div className="text-blue-100 text-xs">
-              {format(new Date(time), 'ha')}
+              {time ? format(new Date(time), 'ha') : '—'}
             </div>
             <div
               className={cn(
                 'size-6 rounded-full skeleton-div',
                 {
-                  'bg-yellow-300': isDay,
+                  'bg-yellow-300': isDay && weatherAtLocation,
                 },
                 {
-                  'bg-indigo-200': !isDay,
-                },
+                  'bg-indigo-200': !isDay && weatherAtLocation,
+                }
               )}
             />
             <div className="text-blue-50 text-sm">
-              {n(displayTemperatures[index])}
-              {weatherAtLocation.hourly_units.temperature_2m}
+              {weatherAtLocation && displayTemperatures[index] !== null
+                ? `${n(displayTemperatures[index])}${weatherAtLocation.hourly_units.temperature_2m}`
+                : '—°'}
             </div>
           </div>
         ))}
