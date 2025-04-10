@@ -4,6 +4,10 @@ class Message < ApplicationRecord
   acts_as_message
   
   has_many :tool_calls, dependent: :destroy
+
+  def extract_content
+    JSON.parse(content) rescue content
+  end
   
   def self.to_ai_sdk_format(messages)
     formatted_messages = []
