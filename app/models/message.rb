@@ -6,7 +6,33 @@ class Message < ApplicationRecord
   has_many :tool_calls, dependent: :destroy
 
   def extract_content
-    JSON.parse(content) rescue content
+    return content unless content.is_a?(String)
+    
+    # Try standard JSON parsing first
+    JSON.parse(content)
+  rescue JSON::ParserError
+    # For Ruby hash syntax that got serialized as a string
+    if content.start_with?('{') && content.include?('=>')
+      begin
+        # Convert Ruby hash syntax to JSON
+        eval(content) 
+      rescue => e
+        # If all parsing attempts fail, return the original content
+        content
+      end
+    else
+      content
+    end
+  end
+  
+  # For serializing properly when saving
+  def content=(value)
+    if value.is_a?(Hash)
+      # Ensure hashes are stored as JSON strings
+      super(value.to_json)
+    else
+      super(value)
+    end
   end
   
   def self.to_ai_sdk_format(messages)
@@ -23,11 +49,11 @@ class Message < ApplicationRecord
           "id" => current_message.id.to_s,
           "createdAt" => current_message.created_at.utc.iso8601,
           "role" => "user",
-          "content" => current_message.content,
+          "content" => current_message.extract_content,
           "parts" => [
             {
               "type" => "text",
-              "text" => current_message.content
+              "text" => current_message.extract_content
             }
           ]
         }
@@ -45,17 +71,12 @@ class Message < ApplicationRecord
           # Find the next message, which might be a tool result
           next_message = i + 1 < messages.length ? messages[i + 1] : nil
           tool_result = nil
-          message_content = current_message.content
+          message_content = current_message.extract_content
           
           # If the next message is a tool result, use its content
           if next_message && next_message.role == "tool"
             # Parse tool result data from content
-            begin
-              tool_result = JSON.parse(next_message.content.gsub(/=>/, ':'))
-            rescue
-              # If parsing fails, use as-is
-              tool_result = next_message.content
-            end
+            tool_result = next_message.extract_content
           end
           
           # Check for a subsequent assistant message that contains text content
@@ -63,7 +84,7 @@ class Message < ApplicationRecord
           if next_message && next_message.role == "tool" && i + 2 < messages.length && messages[i + 2].role == "assistant"
             next_text_message = messages[i + 2]
             if next_text_message.content.present?
-              message_content = next_text_message.content
+              message_content = next_text_message.extract_content
             end
           end
           
@@ -112,11 +133,11 @@ class Message < ApplicationRecord
             "id" => current_message.id.to_s,
             "createdAt" => current_message.created_at.utc.iso8601,
             "role" => "assistant",
-            "content" => current_message.content,
+            "content" => current_message.extract_content,
             "parts" => [
               {
                 "type" => "text",
-                "text" => current_message.content
+                "text" => current_message.extract_content
               }
             ]
           }
