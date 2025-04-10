@@ -59,7 +59,12 @@ class Transcribe < RubyLLM::Tool
       resultData = result["data"][0]
       {
         markdown: result["markdown"],
-        metadata: resultData["metadata"],
+        comment_count: resultData["metadata"]["comment_count"],
+        like_count: resultData["metadata"]["like_count"],
+        retweet_count: resultData["metadata"]["retweet_count"],
+        quote_count: resultData["metadata"]["quote_count"],
+        thumbnail: resultData["metadata"]["thumbnail"],
+        upload_time: resultData["metadata"]["upload_time"],
         title: resultData["title"],
         total_duration: resultData["total_duration"],
         video_url: resultData["video_url"],
