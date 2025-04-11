@@ -24,6 +24,15 @@ A modern full-stack starter application with Rails backend and React frontend us
    ```
 3. Open http://localhost:3000
 
+## Env
+```bash
+bin/rails credentials:edit --environment development
+```
+```yml
+openai:
+  'your openai key here'
+```
+
 ## Enabling SSR
 
 This starter kit comes with optional SSR support. To enable it, follow these steps:

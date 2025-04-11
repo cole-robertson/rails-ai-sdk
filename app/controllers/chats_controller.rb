@@ -4,11 +4,8 @@ class ChatsController < ApplicationController
   before_action :set_chat, only: [:show, :stream, :destroy]
 
   def index
-    chats = Current.user.chats.order(created_at: :desc)
-    
-    render inertia: "Chats/Index", props: {
-      chats: ChatSerializer.many(chats)
-    }
+    @chat = next_chat
+    redirect_to chat_path(@chat)
   end
 
   def show
@@ -40,18 +37,14 @@ class ChatsController < ApplicationController
     with_ai_sdk_stream do |stream|
       weather_tool = Weather.new(stream)
       transcribe_tool = Transcribe.new(stream)
+
       @chat.with_tools(weather_tool, transcribe_tool)
+      
       @chat.ask(user_message_content) do |chunk|
         puts "Chunk: #{chunk}"
         stream.write_text_chunk(chunk.content)
       end
     end
-
-    tool_call = @chat.messages.find_by(role: 'assistant').tool_calls.first
-    if tool_call
-      puts "Tool: #{tool_call.name}"
-      puts "Arguments: #{tool_call.arguments}"
-    end  
   end
 
 
@@ -68,12 +61,9 @@ class ChatsController < ApplicationController
   end
 
   def next_chat
-    next_chat = Current.user.chats.where.not(id: @chat.id).order(created_at: :desc).first
+    query = Current.user.chats.order(created_at: :desc)
+    query = query.where.not(id: @chat.id) if @chat.present?
     
-    if next_chat
-      next_chat
-    else
-      Chat.create!(model_id: 'gpt-4o-mini', user: Current.user)
-    end
+    query.first || Chat.create!(model_id: 'gpt-4o-mini', user: Current.user)
   end
 end
