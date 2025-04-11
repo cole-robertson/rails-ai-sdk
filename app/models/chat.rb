@@ -1,6 +1,7 @@
 class Chat < ApplicationRecord
   acts_as_chat
   
+  belongs_to :user, optional: true
   has_many :messages, dependent: :destroy, after_add: :check_for_title_generation
   
   def last_message_content

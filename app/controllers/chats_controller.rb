@@ -4,7 +4,7 @@ class ChatsController < ApplicationController
   before_action :set_chat, only: [:show, :stream, :destroy]
 
   def index
-    chats = Chat.order(created_at: :desc)
+    chats = Current.user.chats.order(created_at: :desc)
     
     render inertia: "Chats/Index", props: {
       chats: ChatSerializer.many(chats)
@@ -13,7 +13,7 @@ class ChatsController < ApplicationController
 
   def show
     messages = @chat.messages.order(:created_at)
-    all_chats = Chat.order(created_at: :desc)
+    all_chats = Current.user.chats.order(created_at: :desc)
     
     render inertia: "Chats/Show", props: {
       chat: ChatSerializer.one(@chat),
@@ -23,7 +23,10 @@ class ChatsController < ApplicationController
   end
 
   def create
-    chat = Chat.create!(model_id: params[:model_id] || 'gpt-4o-mini')
+    chat = Chat.create!(
+      model_id: params[:model_id] || 'gpt-4o-mini',
+      user: Current.user
+    )
     
     redirect_to chat_path(chat)
   end
@@ -61,10 +64,16 @@ class ChatsController < ApplicationController
   private
 
   def set_chat
-    @chat = Chat.find(params[:id])
+    @chat = Current.user.chats.find(params[:id])
   end
 
   def next_chat
-    Chat.where.not(id: @chat.id).order(created_at: :desc).first || Chat.create!(model_id: 'gpt-4o-mini')
+    next_chat = Current.user.chats.where.not(id: @chat.id).order(created_at: :desc).first
+    
+    if next_chat
+      next_chat
+    else
+      Chat.create!(model_id: 'gpt-4o-mini', user: Current.user)
+    end
   end
 end
