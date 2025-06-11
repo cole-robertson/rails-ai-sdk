@@ -17,7 +17,7 @@ gem "jbuilder"
 gem "bcrypt", "~> 3.1.7"
 
 # Ruby LLM
-gem 'ruby_llm', '1.1.0'
+gem 'ruby_llm', '1.3.1'
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
